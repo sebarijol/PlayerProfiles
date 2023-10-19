@@ -1,4 +1,4 @@
-package me.sebarijol15.playerprofiles;
+package me.sebarijol15.playerprofiles.Util;
 
 import java.util.UUID;
 

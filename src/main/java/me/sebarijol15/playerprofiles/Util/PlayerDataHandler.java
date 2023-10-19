@@ -1,6 +1,5 @@
 package me.sebarijol15.playerprofiles.Util;
 
-import me.sebarijol15.playerprofiles.PlayerData;
 import net.luckperms.api.LuckPerms;
 import net.luckperms.api.LuckPermsProvider;
 import net.luckperms.api.model.user.User;

@@ -1,5 +1,6 @@
 package me.sebarijol15.playerprofiles.Inventories;
 
+import me.sebarijol15.playerprofiles.Util.HexUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
@@ -12,6 +13,7 @@ import org.bukkit.inventory.meta.SkullMeta;
 import java.util.*;
 
 public class InventoryItem {
+    HexUtil hexUtil = new HexUtil();
     private ItemStack itemStack;
     private String displayName;
     private String localizedName;
@@ -22,17 +24,17 @@ public class InventoryItem {
     }
 
     public InventoryItem setDisplayName(String displayName) {
-        this.displayName = ChatColor.translateAlternateColorCodes('&',displayName);
+        this.displayName = hexUtil.translateHexCodes(displayName);
         return this;
     }
 
     public InventoryItem setLocalizedName(String localizedName) {
-        this.localizedName = ChatColor.translateAlternateColorCodes('&',localizedName);
+        this.localizedName = localizedName;
         return this;
     }
 
     public InventoryItem addLoreLine(String loreLine) {
-        this.lore.add(ChatColor.translateAlternateColorCodes('&',loreLine));
+        this.lore.add(hexUtil.translateHexCodes(loreLine));
         return this;
     }
 

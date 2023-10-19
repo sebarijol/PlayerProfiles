@@ -5,6 +5,7 @@ import me.sebarijol15.playerprofiles.Inventories.ProfileGUI;
 import me.sebarijol15.playerprofiles.Inventories.RankupGUI;
 import me.sebarijol15.playerprofiles.Util.EconomyManager;
 import me.sebarijol15.playerprofiles.Util.FileManager;
+import me.sebarijol15.playerprofiles.Util.HexUtil;
 import me.sebarijol15.playerprofiles.Util.PlayerDataHandler;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.minimessage.MiniMessage;
@@ -30,11 +31,9 @@ public class InventoryEvents implements Listener {
     // Reference to the EconomyManager used for handling player balances
     private EconomyManager economyManager;
 
-    // Static instance of MiniMessage for message formatting
-    private static MiniMessage mm = MiniMessage.miniMessage();
-
     // Reference to the LuckPerms instance for permission management
     private LuckPerms luckPerms;
+    private HexUtil hexUtil = new HexUtil();
 
     /**
      * Constructs an EventManager object with the specified EconomyManager.
@@ -61,7 +60,6 @@ public class InventoryEvents implements Listener {
         }
 
         Player player = (Player) event.getWhoClicked();
-        Audience audience = (Audience) event.getWhoClicked();
 
         String clickedItemLocalizedName = event.getCurrentItem().getItemMeta().getLocalizedName();
 
@@ -79,8 +77,8 @@ public class InventoryEvents implements Listener {
                 // Toggle player's gender
                 boolean gender = getPlayerGender(player);
                 gender = !gender;
-                String playerGender = gender ? "<#ff57fc>MUJER</#ff57fc>" : "<#4297ff>HOMBRE</#4297ff>";
-                audience.sendMessage(mm.deserialize("<#CCCCCC>Tu género se ha establecido a " + playerGender + ".</#CCCCCC>"));
+                String playerGender = gender ? hexUtil.translateHexCodes("&#ff57fc>MUJER") : "&#4297ffHOMBRE";
+                player.sendMessage(hexUtil.translateHexCodes("&#ccccccTu género se ha establecido a " + playerGender + "&#cccccc."));
                 savePlayerGender(player, gender);
                 player.closeInventory();
                 break;
@@ -97,7 +95,8 @@ public class InventoryEvents implements Listener {
 
                 // Check if the player has enough money to buy the next rank
                 if (!economyManager.hasEnough(player, requiredAmount)) {
-                    audience.sendMessage(mm.deserialize("<#CCCCCC>No tienes el dinero suficiente para subir de rango.\nTe faltan <#bda253>$" + requiredAmount + " Reales</#bda253>.</#CCCCCC>"));
+                    player.sendMessage(hexUtil.translateHexCodes("&#cccccc¡No tienes suficiente dinero para comprarte el siguiente rango!"));
+                    player.sendMessage(hexUtil.translateHexCodes("&#ccccccTe faltan &#bda253" + requiredAmount + " Reales&#cccccc."));
                     event.setCancelled(true);
                     return;
                 }
@@ -110,14 +109,14 @@ public class InventoryEvents implements Listener {
                 luckPerms.getUserManager().saveUser(user);
 
                 // Notify the player about the rank purchase
-                String newRankMessage = PlaceholderAPI.setPlaceholders(player,"<#CCCCCC>Tu nuevo rango es <#bda253>%playerprofiles_rank%</#bda253>.</#CCCCCC>");
-                audience.sendMessage(mm.deserialize(newRankMessage));
-                audience.sendMessage(mm.deserialize("<#CCCCCC>¡Has pagado <#bda253>$" + requiredAmount + " Reales</#bda253> y has ascendido de rango!</#CCCCCC>"));
+                String newRankMessage = PlaceholderAPI.setPlaceholders(player,"&#ccccccTu nuevo rango es &#bda253%playerprofiles_rank%.&#cccccc>");
+                player.sendMessage(hexUtil.translateHexCodes(newRankMessage));
+                player.sendMessage("&#cccccc¡Has pagado &#bda253$" + requiredAmount + " Reales &#ccccccy has ascendido de rango!");
 
                 // Notify other players about the rank purchase
                 for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
                     if (!onlinePlayer.equals(player)) {
-                        onlinePlayer.sendMessage(PlaceholderAPI.setPlaceholders(player, ChatColor.translateAlternateColorCodes('&',"&7¡El jugador &b" + player.getName() + " &7ha comprado el rango &b%luckperms_current_group_on_track_rangos% &7por &b" + requiredAmount + " &7Reales!")));
+                        onlinePlayer.sendMessage(PlaceholderAPI.setPlaceholders(player, hexUtil.translateHexCodes("&#cccccc¡El jugador &#bda253" + player.getName() + " &#ccccccha comprado el rango &#bda253%playerprofiles_rank% &#cccccc por &#bda253" + requiredAmount + " Reales&#cccccc!")));
                     }
                 }
 
