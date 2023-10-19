@@ -26,7 +26,7 @@ public final class PlayerProfiles extends JavaPlugin implements CommandExecutor 
         fileManager.setupConfig();
 
         getServer().getPluginManager().registerEvents(new InventoryEvents(new EconomyManager()), this);
-        this.getCommand("profile").setExecutor(this);
+        this.getCommand("perfil").setExecutor(this);
 
         if (!playersFolder.exists()) {
             playersFolder.mkdirs();

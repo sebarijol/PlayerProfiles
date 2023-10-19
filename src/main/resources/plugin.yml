@@ -2,9 +2,8 @@ name: PlayerProfiles
 version: '${project.version}'
 main: me.sebarijol15.playerprofiles.PlayerProfiles
 api-version: '1.13'
-softdepend: [PlaceholderAPI, Luckperms, Vault]
+depends: [PlaceholderAPI, Luckperms, Vault]
 commands:
   profile:
     description: Main command
-    usage: </profile>
-    aliases: [perfil]
+    usage: </perfil>
