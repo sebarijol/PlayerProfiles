@@ -1,14 +1,11 @@
 package me.sebarijol15.playerprofiles.Inventories;
 
 import me.sebarijol15.playerprofiles.Util.HexUtil;
-import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.inventory.meta.SkullMeta;
 
 import java.util.*;
 
@@ -17,6 +14,7 @@ public class InventoryItem {
     private ItemStack itemStack;
     private String displayName;
     private String localizedName;
+    private String permission;
     private List<String> lore;
     public InventoryItem(Material material) {
         this.itemStack = new ItemStack(material);
@@ -58,6 +56,16 @@ public class InventoryItem {
         ItemStack itemStack = toItemStack();
         if (inventory != null && slot >= 0 && slot < inventory.getSize()) {
             inventory.setItem(slot, itemStack);
+        }
+    }
+
+    public void addToInventory(Inventory inventory, Player player, String permission) {
+        if (!(player.hasPermission(permission))) {
+            return;
+        }
+        ItemStack itemStack = toItemStack();
+        if (inventory != null) {
+            inventory.setItem(inventory.firstEmpty(), itemStack);
         }
     }
 

@@ -4,6 +4,6 @@ main: me.sebarijol15.playerprofiles.PlayerProfiles
 api-version: '1.13'
 depends: [PlaceholderAPI, Luckperms, Vault]
 commands:
-  profile:
+  perfil:
     description: Main command
     usage: </perfil>

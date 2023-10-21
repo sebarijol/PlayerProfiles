@@ -1,21 +1,19 @@
 package me.sebarijol15.playerprofiles.Events;
 
 import me.clip.placeholderapi.PlaceholderAPI;
-import me.sebarijol15.playerprofiles.Inventories.ProfileGUI;
 import me.sebarijol15.playerprofiles.Inventories.RankupGUI;
+import me.sebarijol15.playerprofiles.Inventories.StatisticsGUI;
+import me.sebarijol15.playerprofiles.PlayerProfiles;
 import me.sebarijol15.playerprofiles.Util.EconomyManager;
 import me.sebarijol15.playerprofiles.Util.FileManager;
 import me.sebarijol15.playerprofiles.Util.HexUtil;
 import me.sebarijol15.playerprofiles.Util.PlayerDataHandler;
-import net.kyori.adventure.audience.Audience;
-import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.luckperms.api.LuckPerms;
 import net.luckperms.api.LuckPermsProvider;
 import net.luckperms.api.context.ImmutableContextSet;
 import net.luckperms.api.model.user.User;
 import net.luckperms.api.track.Track;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -23,14 +21,18 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryOpenEvent;
+import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.InventoryView;
 
 import java.io.File;
 import java.io.IOException;
 
 public class InventoryEvents implements Listener {
+    private Player targetPlayer;
     // Reference to the EconomyManager used for handling player balances
     private EconomyManager economyManager;
-
+    private Inventory fromInventory, toInventory;
     // Reference to the LuckPerms instance for permission management
     private LuckPerms luckPerms;
     private HexUtil hexUtil = new HexUtil();
@@ -40,11 +42,31 @@ public class InventoryEvents implements Listener {
      *
      * @param economyManager The EconomyManager used for handling player balances.
      */
-    public InventoryEvents(EconomyManager economyManager) {
+    public InventoryEvents(EconomyManager economyManager, Player targetPlayer) {
+        this.targetPlayer = PlayerProfiles.getTargetPlayer();
+        // Initialize the EconomyManager
         this.economyManager = economyManager;
-
         // Initialize the LuckPerms instance
         this.luckPerms = LuckPermsProvider.get();
+    }
+
+    /**
+     * Handles the InventoryOpenEvent and performs certain actions based on the
+     * type of inventory being opened.
+     *
+     * @param  event  the InventoryOpenEvent triggered when an inventory is opened
+     */
+    @EventHandler
+    public void onInventoryOpen(InventoryOpenEvent event) {
+        InventoryView view = event.getView();
+        String originalTitle = view.getOriginalTitle();
+
+        if (originalTitle.contains("Perfil") || originalTitle.contains("Opciones") || originalTitle.contains("Estadísticas")) {
+            if (toInventory != null) {
+                fromInventory = toInventory;
+            }
+            toInventory = event.getInventory();
+        }
     }
 
     /**
@@ -55,11 +77,10 @@ public class InventoryEvents implements Listener {
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
         // Check if the clicked item is null
-        if (event.getCurrentItem() == null || event.getCurrentItem().getType() == Material.AIR) {
-            return;
-        }
+        if (event.getCurrentItem() == null || event.getCurrentItem().getType() == Material.AIR) return;
 
         Player player = (Player) event.getWhoClicked();
+        targetPlayer = PlayerProfiles.getTargetPlayer();
 
         String clickedItemLocalizedName = event.getCurrentItem().getItemMeta().getLocalizedName();
 
@@ -70,6 +91,14 @@ public class InventoryEvents implements Listener {
                 RankupGUI rankupGUI = new RankupGUI(player);
                 player.openInventory(rankupGUI.getInventory());
                 break;
+            case "open_statistics_menu":
+                if (targetPlayer == null) {
+                    StatisticsGUI statisticsGUI = new StatisticsGUI(player);
+                    player.openInventory(statisticsGUI.getInventory());
+                } else {
+                    StatisticsGUI statisticsGUI = new StatisticsGUI(targetPlayer);
+                    player.openInventory(statisticsGUI.getInventory());
+                }
             case "static_item":
                 event.setCancelled(true);
                 break;
@@ -77,15 +106,13 @@ public class InventoryEvents implements Listener {
                 // Toggle player's gender
                 boolean gender = getPlayerGender(player);
                 gender = !gender;
-                String playerGender = gender ? hexUtil.translateHexCodes("&#ff57fc>MUJER") : "&#4297ffHOMBRE";
-                player.sendMessage(hexUtil.translateHexCodes("&#ccccccTu género se ha establecido a " + playerGender + "&#cccccc."));
+                String playerGender = gender ? hexUtil.translateHexCodes("&#ff57fcMUJER") : "&#4297ffHOMBRE";
+                player.sendMessage(hexUtil.translateHexCodes("&#c9b67dTu género se ha establecido a " + playerGender + "&#c9b67d."));
                 savePlayerGender(player, gender);
                 player.closeInventory();
                 break;
-            case "go_back_to_profile":
-                // Go back to the profile GUI
-                ProfileGUI profileGUI = new ProfileGUI(player);
-                player.openInventory(profileGUI.getInventory());
+            case "go_back":
+                player.openInventory(fromInventory);
                 break;
             case "buy_next_rank":
                 User user = luckPerms.getUserManager().getUser(player.getUniqueId());
@@ -95,8 +122,8 @@ public class InventoryEvents implements Listener {
 
                 // Check if the player has enough money to buy the next rank
                 if (!economyManager.hasEnough(player, requiredAmount)) {
-                    player.sendMessage(hexUtil.translateHexCodes("&#cccccc¡No tienes suficiente dinero para comprarte el siguiente rango!"));
-                    player.sendMessage(hexUtil.translateHexCodes("&#ccccccTe faltan &#bda253" + requiredAmount + " Reales&#cccccc."));
+                    player.sendMessage(hexUtil.translateHexCodes("&#c9b67d¡No tienes suficiente dinero para comprarte el siguiente rango!"));
+                    player.sendMessage(hexUtil.translateHexCodes("&#c9b67dTe faltan &#bda253" + requiredAmount + " Reales&#c9b67d."));
                     event.setCancelled(true);
                     return;
                 }
@@ -109,14 +136,13 @@ public class InventoryEvents implements Listener {
                 luckPerms.getUserManager().saveUser(user);
 
                 // Notify the player about the rank purchase
-                String newRankMessage = PlaceholderAPI.setPlaceholders(player,"&#ccccccTu nuevo rango es &#bda253%playerprofiles_rank%.&#cccccc>");
-                player.sendMessage(hexUtil.translateHexCodes(newRankMessage));
-                player.sendMessage("&#cccccc¡Has pagado &#bda253$" + requiredAmount + " Reales &#ccccccy has ascendido de rango!");
+                player.sendMessage(hexUtil.translateHexCodes(PlaceholderAPI.setPlaceholders(player,"&#c9b67dTu nuevo rango es &#bda253%playerprofiles_rank%.&#c9b67d>")));
+                player.sendMessage(hexUtil.translateHexCodes("&#c9b67d¡Has pagado &#bda253$" + requiredAmount + " Reales &#c9b67dy has ascendido de rango!"));
 
                 // Notify other players about the rank purchase
                 for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
                     if (!onlinePlayer.equals(player)) {
-                        onlinePlayer.sendMessage(PlaceholderAPI.setPlaceholders(player, hexUtil.translateHexCodes("&#cccccc¡El jugador &#bda253" + player.getName() + " &#ccccccha comprado el rango &#bda253%playerprofiles_rank% &#cccccc por &#bda253" + requiredAmount + " Reales&#cccccc!")));
+                        onlinePlayer.sendMessage(PlaceholderAPI.setPlaceholders(player, hexUtil.translateHexCodes("&#c9b67d¡El jugador &#bda253" + player.getName() + " &#c9b67dha comprado el rango &#bda253%playerprofiles_rank% &#c9b67d por &#bda253" + requiredAmount + " Reales&#c9b67d!")));
                     }
                 }
 
@@ -124,8 +150,7 @@ public class InventoryEvents implements Listener {
                 savePlayerRank(player,PlaceholderAPI.setPlaceholders(player,"%luckperms_current_group_on_track_rangos%"));
 
                 // Open the profile GUI
-                profileGUI = new ProfileGUI(player);
-                player.openInventory(profileGUI.getInventory());
+                player.openInventory(fromInventory);
                 break;
         }
     }
@@ -136,6 +161,8 @@ public class InventoryEvents implements Listener {
      * @param player The player for which to retrieve the gender.
      * @return true if the player is female, false if the player is male.
      */
+
+
     private boolean getPlayerGender(Player player) {
         // Get the file for the player's configuration
         File playerFile = new File(PlayerDataHandler.getPlayersFolder(), player.getUniqueId() + ".yml");
@@ -201,5 +228,9 @@ public class InventoryEvents implements Listener {
             // Log a severe error message indicating that an error occurred while saving the player's rank
             Bukkit.getLogger().severe("An error occurred while saving the player's rank.");
         }
+    }
+
+    public void openInventory(Player player, Inventory inventory) {
+
     }
 }
